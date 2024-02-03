@@ -15,12 +15,14 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+import tempfile
 
 
 
 class VoiceSelection(StatesGroup):
     Choosing = State()
-
+    FormatChoosing = State()
 
 API_TOKEN = TOKEN
 
@@ -89,7 +91,7 @@ def synthesize(api_key, text,voice) -> pydub.AudioSegment:
        hints=[
     tts_pb2.Hints(voice=voice),  # (Опционально) Задайте голос. Значение по умолчанию marina
           # (Опционально) Укажите амплуа, только если голос их имеет
-    tts_pb2.Hints(speed=1.1)           # (Опционально) Задайте скорость синтеза
+    tts_pb2.Hints(speed=1.0)           # (Опционально) Задайте скорость синтеза
 ],
 
         loudness_normalization_type=tts_pb2.UtteranceSynthesisRequest.LUFS
@@ -148,33 +150,86 @@ async def handle_text_message(message: types.Message, state: FSMContext):
     else:
         await bot.send_message(message.chat.id, text=NOT_SUB_MESSAGE,reply_markup=keyboard,parse_mode='HTML')
 
+# async def generate_speed_keyboard():
+#     keyboard = types.InlineKeyboardMarkup()
+#     speeds = [str(i / 10.0) for i in range(1, 30)]  # Speeds from 0.1 to 2.9
+#     for i in range(0, len(speeds), 3):
+#         row = []
+#         for speed in speeds[i:i+3]:
+#             row.append(InlineKeyboardButton(text=speed, callback_data=f"speed_{speed}"))
+#         keyboard.row(*row)
+#     return keyboard
+
+
+async def generate_format_keyboard():
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.row(InlineKeyboardButton(text="WAV 🎵", callback_data="format_wav"),
+                 InlineKeyboardButton(text="MP3 💿", callback_data="format_mp3"))
+    return keyboard
+
 
 @dp.callback_query_handler(lambda c: c.data.startswith('voice_'), state=VoiceSelection.Choosing)
 async def process_voice_choice(callback_query: types.CallbackQuery, state: FSMContext):
-    # Извлечь выбранный голос из данных колбэка
     selected_voice = callback_query.data.split('_')[1]
+    await VoiceSelection.FormatChoosing.set()
 
-    # Извлечь текст из состояния пользователя
+    # Save selected voice to state
+    await state.update_data(selected_voice=selected_voice)
+
+    # Send keyboard for format selection directly
+    keyboard = await generate_format_keyboard()
+    await bot.edit_message_text("Выберите формат аудио:", callback_query.message.chat.id,
+                                callback_query.message.message_id, reply_markup=keyboard)
+
+
+# @dp.callback_query_handler(lambda c: c.data.startswith('speed_'), state=VoiceSelection.SpeedChoosing)
+# async def process_speed_choice(callback_query: types.CallbackQuery, state: FSMContext):
+#     selected_speed = float(callback_query.data.split('_')[1])
+#     await VoiceSelection.FormatChoosing.set()
+
+#     # Save selected speed to state
+#     await state.update_data(selected_speed=selected_speed)
+
+#     # Send keyboard for format selection
+#     keyboard = await generate_format_keyboard()  # Await the function
+#     await bot.edit_message_text("Выберите формат аудио:", callback_query.message.chat.id,
+#                                 callback_query.message.message_id, reply_markup=keyboard)
+
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('format_'), state=VoiceSelection.FormatChoosing)
+async def process_format_choice(callback_query: types.CallbackQuery, state: FSMContext):
+    selected_format = callback_query.data.split('_')[1]
     data = await state.get_data()
-    text = data['text']
+    selected_voice = data.get('selected_voice')
+    selected_speed = data.get('selected_speed')
 
-    # Используйте выбранный голос для синтеза речи
-    api_key = 'AQVN0fiGepILDWchpaGpBf81jITFo_SQY6AruXBb'  # Замените на свой API-ключ
-
+    # Use selected voice, speed, and format for speech synthesis
+    api_key = 'AQVN0fiGepILDWchpaGpBf81jITFo_SQY6AruXBb'  # Replace with your API key
+    text = data.get('text', '')
     audio = synthesize(api_key, text[0:249], voice=selected_voice)
 
-    # Отправка голосового сообщения
-    with io.BytesIO() as audio_buffer:
-        audio.export(audio_buffer, format='wav')
-        audio_buffer.seek(0)
-        await bot.send_voice(callback_query.from_user.id, audio_buffer, caption=text[0:259] + '....',
-                             parse_mode=ParseMode.MARKDOWN)
+    # Convert audio format if MP3 is selected
+    if selected_format == 'mp3':
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
+            audio.export(temp_file.name, format='mp3')
+            audio_data = open(temp_file.name, 'rb')
+    else:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+            audio.export(temp_file.name, format='wav')
+            audio_data = open(temp_file.name, 'rb')
 
-    # Выйти из состояния выбора голоса
+    # Send the audio file
+    await bot.send_audio(callback_query.from_user.id, audio_data, caption=text[0:259] + '....',
+                        parse_mode=ParseMode.MARKDOWN)
+
+    # Finish the state
     await state.finish()
 
-    # Ответить на колбэк, чтобы закрыть всплывающее окно с выбором голоса
-    await bot.answer_callback_query(callback_query.id, text=f"Выбран голос: {selected_voice}")
+    # Answer the callback query
+    await bot.answer_callback_query(callback_query.id, text=f"Голос: {selected_voice}, Скорость: {selected_speed}, Формат: {selected_format}")
+
+
 if __name__ == '__main__':
     from aiogram import executor
 
