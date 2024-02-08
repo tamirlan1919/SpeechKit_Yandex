@@ -14,10 +14,10 @@ import yandex.cloud.ai.tts.v3.tts_service_pb2_grpc as tts_service_pb2_grpc
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-
+from aiogram.types.web_app_info import WebAppInfo
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import tempfile
-
+from base import create_db
 
 
 class VoiceSelection(StatesGroup):
@@ -31,6 +31,8 @@ dp = Dispatcher(bot, storage=MemoryStorage())
 
 dp.middleware.setup(LoggingMiddleware())
 
+
+create_db()
 
 voice_descriptions = {
     'alena': 'Алёна 💅',
@@ -69,6 +71,15 @@ async def handle_start(message: types.Message):
     
     # Отправляем текст и преобразуем его в речь
     await bot.send_message(message.chat.id, welcome_text)
+
+
+
+@dp.message_handler(commands=['set_voice'], state="*")
+async def handle_setVoice(message: types.Message):
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton("Перейти", web_app=WebAppInfo(url = 'https://ui-telegrab-bot.vercel.app')))
+    await bot.send_message(message.chat.id, 'Вы должны выбрать голос', reply_markup=keyboard)
+
 
 @dp.message_handler(commands=['developer'], state="*")
 async def handle_developer(message: types.Message):
@@ -232,7 +243,6 @@ async def process_format_choice(callback_query: types.CallbackQuery, state: FSMC
 
 if __name__ == '__main__':
     from aiogram import executor
-
     loop = asyncio.get_event_loop()
     loop.create_task(bot.send_message(5455171373, 'Бот запущен'))  # Замените 123456789 на ваш ID чата
     executor.start_polling(dp, skip_updates=True)
