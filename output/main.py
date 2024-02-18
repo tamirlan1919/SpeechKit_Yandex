@@ -17,8 +17,8 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.types.web_app_info import WebAppInfo
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import tempfile
-from base import create_db
-
+from base import *
+from aiogram.utils.exceptions import ChatNotFound
 
 class VoiceSelection(StatesGroup):
     Choosing = State()
@@ -30,6 +30,7 @@ bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
 dp.middleware.setup(LoggingMiddleware())
+
 
 
 create_db()
@@ -72,14 +73,33 @@ async def handle_start(message: types.Message):
     # Отправляем текст и преобразуем его в речь
     await bot.send_message(message.chat.id, welcome_text)
 
+@dp.message_handler(commands=['admin'], state="*")
+async def handle_admin(message: types.Message):
+    # Проверяем, является ли отправитель сообщения администратором
+    print(message.chat.id in admin_ids)
+    if message.chat.id not in admin_ids:
+        await message.reply("У вас нет доступа к админ-панели.")
+        return
+    
+    # Создание клавиатуры админ-панели
+    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    keyboard.add(types.KeyboardButton(text="Состояние бота"), types.KeyboardButton(text="Рассылка"),
+                 types.KeyboardButton(text="Аналитика"))
+
+    await bot.send_message(message.chat.id, "Выберите действие:", reply_markup=keyboard)
 
 
 @dp.message_handler(commands=['set_voice'], state="*")
 async def handle_setVoice(message: types.Message):
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("Перейти", web_app=WebAppInfo(url = 'https://ui-telegrab-bot.vercel.app')))
-    await bot.send_message(message.chat.id, 'Вы должны выбрать голос', reply_markup=keyboard)
+    keyboard = types.ReplyKeyboardMarkup(row_width=1,resize_keyboard=True) #создаем клавиатуру
+    webAppTest = types.WebAppInfo(url = "https://ui-telegrab-bot.vercel.app/") #создаем webappinfo - формат хранения url
+    one_butt = types.KeyboardButton(text="Перейти", web_app=webAppTest) #создаем кнопку типа webapp
+    keyboard.add(one_butt) #добавляем кнопки в клавиатуру
 
+
+    # keyboard = types.ReplyKeyboardMarkup()
+    # keyboard.add("Перейти", web_app=WebAppInfo(url = 'https://ui-telegrab-bot.vercel.app/'))
+    await bot.send_message(message.chat.id, 'Вы должны выбрать голос', reply_markup=keyboard)
 
 @dp.message_handler(commands=['developer'], state="*")
 async def handle_developer(message: types.Message):
@@ -90,19 +110,22 @@ async def handle_developer(message: types.Message):
     # Отправляем текст и преобразуем его в речь
     await bot.send_message(message.chat.id, developer_text, parse_mode=ParseMode.MARKDOWN)
 
-def synthesize(api_key, text,voice) -> pydub.AudioSegment: 
+def synthesize(api_key, text,voice,speed) -> pydub.AudioSegment: 
     request = tts_pb2.UtteranceSynthesisRequest(
+        
         text=text,
         output_audio_spec=tts_pb2.AudioFormatOptions(
             container_audio=tts_pb2.ContainerAudio(
                 container_audio_type=tts_pb2.ContainerAudio.WAV
             )
         ),
+        unsafe_mode = True,
         # Параметры синтеза
        hints=[
     tts_pb2.Hints(voice=voice),  # (Опционально) Задайте голос. Значение по умолчанию marina
           # (Опционально) Укажите амплуа, только если голос их имеет
-    tts_pb2.Hints(speed=1.0)           # (Опционально) Задайте скорость синтеза
+    tts_pb2.Hints(speed=speed)          # (Опционально) Задайте скорость синтеза
+    
 ],
 
         loudness_normalization_type=tts_pb2.UtteranceSynthesisRequest.LUFS
@@ -133,13 +156,12 @@ def synthesize(api_key, text,voice) -> pydub.AudioSegment:
         raise err
 
 
-async def check_sub_channels(channels,user_id):
-    for channels in channels:
-        chat_member = await bot.get_chat_member(chat_id= channels[1],user_id=user_id)
-        if chat_member['status'] == 'left':
+async def check_sub_channels(channels, user_id):
+    for channel in channels:
+        chat_member = await bot.get_chat_member(chat_id=channel[1], user_id=user_id)
+        if chat_member.status == 'left':
             return False
-        return True
-    
+    return True
 
 
 @dp.message_handler(content_types=types.ContentTypes.TEXT, state="*")
@@ -147,17 +169,46 @@ async def handle_text_message(message: types.Message, state: FSMContext):
     api_key = 'AQVN0fiGepILDWchpaGpBf81jITFo_SQY6AruXBb'  # Замените на свой API-ключ
     text = message.text
     keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(types.InlineKeyboardButton(text='Немонтаж 🎨',url='https://t.me/dfdfdfrrr'))
-    if await check_sub_channels(channels=CNANNELS, user_id=message.from_user.id):
+    keyboard.add(types.InlineKeyboardButton(text='rudhdheheh 🎨',url='https://t.me/rudhdheheh'))
+    keyboard.add(types.InlineKeyboardButton(text='Немонтаж 🎥',url='https://t.me/nmntzh'))
+    user_id = message.from_user.id
+    user_settings = get_user_settings(user_id)  # Функция get_user_settings должна быть определена
+    print(user_settings)
+    if await check_sub_channels(channels=CNANNELS, user_id=user_id):
 
-        # Сохраните текст в состоянии пользователя
-        await state.update_data(text=text)
+        if user_settings:
+            selected_voice = user_settings['selected_voice']
+            selected_speed = user_settings['selected_speed']
+            selected_format = user_settings['format']
 
-        # Войти в состояние выбора голоса
-        await VoiceSelection.Choosing.set()
+            # Используйте настройки пользователя для синтеза речи
+            audio = synthesize(api_key, text=text[0:599], voice=selected_voice,speed=selected_speed)
 
-        # Отправить клавиатуру с выбором голоса
-        await bot.send_message(message.chat.id, "Выберите голос:", reply_markup=generate_voice_keyboard())
+            # Преобразование формата аудио, если выбран MP3
+            if selected_format == 'mp3':
+                with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
+                    audio.export(temp_file.name, format='mp3')
+                    audio_data = open(temp_file.name, 'rb')
+            else:
+                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+                    audio.export(temp_file.name, format='wav')
+                    audio_data = open(temp_file.name, 'rb')
+
+            # Отправка аудиофайла
+            await bot.send_audio(message.chat.id, audio_data, caption=text[0:5] + '....', parse_mode=ParseMode.MARKDOWN)
+        
+
+        else:
+            if user_settings == None:
+                keyboard = types.ReplyKeyboardMarkup(row_width=1,resize_keyboard=True) #создаем клавиатуру
+                webAppTest = types.WebAppInfo(url = "https://ui-telegrab-bot.vercel.app/") #создаем webappinfo - формат хранения url
+                one_butt = types.KeyboardButton(text="Перейти", web_app=webAppTest) #создаем кнопку типа webapp
+                keyboard.add(one_butt) #добавляем кнопки в клавиатуру
+
+
+                # keyboard = types.ReplyKeyboardMarkup()
+                # keyboard.add("Перейти", web_app=WebAppInfo(url = 'https://ui-telegrab-bot.vercel.app/'))
+                await bot.send_message(message.chat.id, 'Вы должны выбрать голос', reply_markup=keyboard)
     else:
         await bot.send_message(message.chat.id, text=NOT_SUB_MESSAGE,reply_markup=keyboard,parse_mode='HTML')
 
