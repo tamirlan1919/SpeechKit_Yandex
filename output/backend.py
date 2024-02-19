@@ -54,3 +54,6 @@ async def save_settings(settings: UserSettings):
     conn.close()
     
     return {"message": "Настройки сохранены успешно"}
+
+
+

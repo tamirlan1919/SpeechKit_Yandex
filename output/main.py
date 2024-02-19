@@ -19,6 +19,8 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import tempfile
 from base import *
 from aiogram.utils.exceptions import ChatNotFound
+import datetime
+
 
 class VoiceSelection(StatesGroup):
     Choosing = State()
@@ -31,9 +33,11 @@ dp = Dispatcher(bot, storage=MemoryStorage())
 
 dp.middleware.setup(LoggingMiddleware())
 
+state_bot = True
 
 
 create_db()
+create_users_table()
 
 voice_descriptions = {
     'alena': 'Алёна 💅',
@@ -71,7 +75,9 @@ async def handle_start(message: types.Message):
                    "Просто отправь мне текст, и я создам для тебя голосовое сообщение! 🎤"
     
     # Отправляем текст и преобразуем его в речь
+    add_user(message.from_user.id, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     await bot.send_message(message.chat.id, welcome_text)
+
 
 @dp.message_handler(commands=['admin'], state="*")
 async def handle_admin(message: types.Message):
@@ -82,11 +88,91 @@ async def handle_admin(message: types.Message):
         return
     
     # Создание клавиатуры админ-панели
-    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-    keyboard.add(types.KeyboardButton(text="Состояние бота"), types.KeyboardButton(text="Рассылка"),
-                 types.KeyboardButton(text="Аналитика"))
+    keyboard = types.InlineKeyboardMarkup(row_width=1, resize_keyboard=True)
+    keyboard.add(types.InlineKeyboardButton(text="Состояние бота 🤖",callback_data='status'), types.InlineKeyboardButton(text="Рассылка 📝",callback_data='newsletter'),
+                 types.InlineKeyboardButton(text="Аналитика 📊",callback_data='analytics'))
 
     await bot.send_message(message.chat.id, "Выберите действие:", reply_markup=keyboard)
+
+
+@dp.callback_query_handler(lambda call: call.data == "analytics", state="*")
+async def handle_bot_state(callback_query: types.CallbackQuery):
+    global state_bot
+    chat_id = callback_query.from_user.id
+    message_id = callback_query.message.message_id
+    keyboard = types.InlineKeyboardMarkup(row_width=1, resize_keyboard=True)
+    keyboard.add(types.InlineKeyboardButton(text="Назад ⏪",callback_data='back'))
+    text = 'Работает'
+    await bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text, reply_markup=keyboard)
+
+
+@dp.callback_query_handler(lambda call: call.data == "back", state="*")
+async def handle_bot_state(callback_query: types.CallbackQuery):
+    global state_bot
+    chat_id = callback_query.from_user.id
+    message_id = callback_query.message.message_id
+    keyboard = types.InlineKeyboardMarkup(row_width=1, resize_keyboard=True)
+    keyboard.add(types.InlineKeyboardButton(text="Состояние бота 🤖",callback_data='status'), types.InlineKeyboardButton(text="Рассылка 📝",callback_data='newsletter'),
+                 types.InlineKeyboardButton(text="Аналитика 📊",callback_data='analytics'))
+  
+    await bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="Выберите опцию", reply_markup=keyboard)
+
+
+
+@dp.callback_query_handler(lambda call: call.data == "status", state="*")
+async def handle_bot_state(callback_query: types.CallbackQuery):
+    global state_bot
+    chat_id = callback_query.from_user.id
+    message_id = callback_query.message.message_id
+    
+    if state_bot:
+        keyboard = types.InlineKeyboardMarkup()
+        
+        keyboard.add(types.InlineKeyboardButton(text="Выключить бота 🔴", callback_data='toggle_off'))
+        keyboard.add(types.InlineKeyboardButton(text='Назад',callback_data='back'))
+        await bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="Бот успешно включен 🟢" , reply_markup=keyboard)
+    else:
+        keyboard = types.InlineKeyboardMarkup()
+        keyboard.add(types.InlineKeyboardButton(text="Включить бота 🟢", callback_data='toggle_on'))
+        keyboard.add(types.InlineKeyboardButton(text='Назад',callback_data='back'))
+
+        await bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="Бот выключен 🔴", reply_markup=keyboard)
+
+@dp.callback_query_handler(lambda call: call.data.startswith("toggle_"), state="*")
+async def toggle_bot(callback_query: types.CallbackQuery):
+    global state_bot
+    message = callback_query.message
+    chat_id = message.chat.id
+    message_id = message.message_id
+    
+    if callback_query.data == "toggle_on":
+        state_bot = True
+        await handle_bot_state(callback_query)
+    elif callback_query.data == "toggle_off":
+        state_bot = False
+        await handle_bot_state(callback_query)
+
+
+# Функция для отправки рассылки
+# async def send_broadcast_message(text, photo):
+#     # Получите список всех пользователей, которые нажали на /start
+#     users = get_all_users()  # Предположим, что у вас есть функция для этого
+
+#     # Отправьте каждому пользователю сообщение и фото
+#     for user_id in users:
+#         await bot.send_photo(user_id, photo, caption=text)
+
+# # Обработчик для кнопки "Рассылка"
+# @dp.message_handler(lambda message: message.text == "Рассылка", state="*")
+# async def handle_broadcast(message: types.Message):
+#     # Отправка сообщения всем пользователям
+#     await send_broadcast_message("Текст рассылки", photo="photo_url")
+
+# # Функция для подсчета количества пользователей
+# async def count_users():
+#     # Получите количество пользователей из базы данных или другого источника
+#     total_users = get_total_users()  # Пример функции для получения общего числа пользователей
+#     return total_users
 
 
 @dp.message_handler(commands=['set_voice'], state="*")
