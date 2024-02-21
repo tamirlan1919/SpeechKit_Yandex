@@ -12,3 +12,4 @@ class UpdateSymbols(StatesGroup):
 
 class UpdateMonth(StatesGroup):
     month = State()
+

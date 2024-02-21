@@ -73,14 +73,21 @@ async def handle_start(message: types.Message):
                    "Просто отправь мне текст, и я создам для тебя голосовое сообщение! 🎤"
     
     # Отправляем текст и преобразуем его в речь
-    add_user(message.from_user.id, message.from_user.username ,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),600,10,'OFF','join','user')
+    
+    if message.from_user.username == None:
+        add_user(message.from_user.id, message.from_user.first_name ,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),600,10,'OFF','join','user')
+    else:
+        add_user(message.from_user.id, message.from_user.username ,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),600,10,'OFF','join','user')   
     await bot.send_message(message.chat.id, welcome_text)
 
 
 @dp.message_handler(commands=['admin'], state="*")
 async def handle_admin(message: types.Message):
     # Проверяем, является ли отправитель сообщения администратором
-    if message.chat.id not in admin_ids:
+    admin = get_admin_user(message.chat.id)
+    print(message.chat.id not in admin_ids)
+    
+    if message.chat.id not in admin_ids and not admin  == 'admin':
         await message.reply("У вас нет доступа к админ-панели.")
         return
     
@@ -185,10 +192,10 @@ async def handle_select_user(callback_query: types.CallbackQuery, state: FSMCont
     unl_btn = ''
     role_btn = ''
     status_btn = ''
-    text = f'ID: {user_id}'
-    text += f'\nЛогин: @{user_name}'
-    text += f'\nКол-во символов: {count_symbols[0]}'
-    text += f'\nКол-во запросов в месяц: {request_month[0]}'
+    text = f'ID: <b>{user_id}</b>'
+    text += f'\nЛогин: <b> @{user_name}</b>'
+    text += f'\nКол-во символов: <b>{count_symbols[0]}</b>'
+    text += f'\nКол-во запросов в месяц: <b>{request_month[0]}</b>'
 
    
     if unlimited[0] == 'ON':
@@ -516,15 +523,16 @@ async def toggle_bot(callback_query: types.CallbackQuery):
 
 @dp.message_handler(commands=['set_voice'], state="*")
 async def handle_setVoice(message: types.Message):
-    keyboard = types.ReplyKeyboardMarkup(row_width=1,resize_keyboard=True) #создаем клавиатуру
-    webAppTest = types.WebAppInfo(url = "https://ui-telegrab-bot.vercel.app/") #создаем webappinfo - формат хранения url
-    one_butt = types.KeyboardButton(text="Перейти", web_app=webAppTest) #создаем кнопку типа webapp
-    keyboard.add(one_butt) #добавляем кнопки в клавиатуру
-
-
-    # keyboard = types.ReplyKeyboardMarkup()
-    # keyboard.add("Перейти", web_app=WebAppInfo(url = 'https://ui-telegrab-bot.vercel.app/'))
-    await bot.send_message(message.chat.id, 'Вы должны выбрать голос', reply_markup=keyboard)
+    user_id = message.from_user.id
+    status = get_status_user(user_id)
+    if status[0]=='join':
+        keyboard = types.ReplyKeyboardMarkup(row_width=1,resize_keyboard=True) #создаем клавиатуру
+        webAppTest = types.WebAppInfo(url = "https://ui-telegrab-bot.vercel.app/") #создаем webappinfo - формат хранения url
+        one_butt = types.KeyboardButton(text="Перейти", web_app=webAppTest) #создаем кнопку типа webapp
+        keyboard.add(one_butt) #добавляем кнопки в клавиатуру
+        await bot.send_message(message.chat.id, 'Вы должны выбрать голос', reply_markup=keyboard)
+    else:
+        await bot.send_message(message.chat.id, 'Отказано в доступе')     
 
 @dp.message_handler(commands=['developer'], state="*")
 async def handle_developer(message: types.Message):
@@ -685,7 +693,7 @@ async def handle_text_message(message: types.Message, state: FSMContext):
             else:
                 await bot.send_message(message.chat.id, text=NOT_SUB_MESSAGE,reply_markup=keyboard,parse_mode='HTML')
         else:
-          await bot.send_message(message.chat.id, text='Отказано в доступе',reply_markup=keyboard,parse_mode='HTML')  
+          await bot.send_message(message.chat.id, text='Отказано в доступе',parse_mode='HTML')  
     else:
         await bot.send_message(message.chat.id, text=SORRY,reply_markup=keyboard,parse_mode='HTML')
 

@@ -229,6 +229,14 @@ def get_all_admin_from_bd():
     conn.close()
     return existing_user[0]
 
+def get_admin_user(user_id):
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT role FROM my_users WHERE  user_id = ?", (user_id,))
+    existing_user = cursor.fetchone()
+    conn.close()
+    return existing_user[0]
+
 
 
 def minus_one(user_id):
