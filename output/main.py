@@ -33,7 +33,7 @@ dp.middleware.setup(LoggingMiddleware())
 
 state_bot = True
 
-
+users_per_page = 3  # Установка количества пользователей на странице
 create_db()
 create_users_table()
 users = get_all_users()
@@ -125,54 +125,115 @@ async def handle_bot_search_user(callback_query: types.CallbackQuery, state: FSM
     await bot.answer_callback_query(callback_query.id)
 
     users = get_all_users()
-    users_per_page = len(users)
+    global users_per_page  # Установка количества пользователей на странице
     current_page = 0
 
     async def send_users_page(chat_id, message_id, page):
-        start_index = page * 6
-        end_index = min((page + 1) * 6, len(users))
+        start_index = page * users_per_page
+        end_index = min((page + 1) * users_per_page, len(users))
         user_names = users[start_index:end_index]
 
         keyboard = types.InlineKeyboardMarkup(row_width=1)
-        for i in range(0, len(user_names), 3):
-            keyboard.add(*[types.InlineKeyboardButton(text=user_name, callback_data=f'select_user_{user_id}_{user_name}') for user_id,user_name in user_names[i:i+3]])
+        for i in range(0, len(user_names)):
+            user_id, user_name = user_names[i]  # Распаковываем tuple
+            keyboard.add(types.InlineKeyboardButton(text=user_name, callback_data=f'select_user_{user_id}_{user_name}'))
 
+        if page > 0:
+            keyboard.row(types.InlineKeyboardButton(text="Назад ⏪", callback_data='back'))
         if end_index < len(users):
-            keyboard.row(
-                types.InlineKeyboardButton(text="Дальше ⏩", callback_data='next'),
-                types.InlineKeyboardButton(text="Назад ⏪", callback_data='back')
-            )
-        else:
-            keyboard.row(
-                types.InlineKeyboardButton(text="Назад ⏪", callback_data='back')
-            )
+            keyboard.row(types.InlineKeyboardButton(text="Дальше ⏩", callback_data='next'))
 
         keyboard.row(
             types.InlineKeyboardButton(text="Поиск по логину 🔍", callback_data='search_by_username'),
             types.InlineKeyboardButton(text='Назад в меню', callback_data='analytics')
-
         )
 
         await bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="Выберите пользователя:", reply_markup=keyboard)
 
     await send_users_page(callback_query.message.chat.id, callback_query.message.message_id, current_page)
 
+
+
+
+# Обработчик нажатия на кнопку "Поиск по логину"
+@dp.callback_query_handler(lambda call: call.data == "search_by_username", state="*")
+async def handle_search_by_username(callback_query: types.CallbackQuery, state: FSMContext):
+    await bot.answer_callback_query(callback_query.id)
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(types.InlineKeyboardButton(text='Отмена и назад в меню',callback_data='search_user'))
+    await bot.send_message(callback_query.from_user.id, "Введите логин пользователя:",reply_markup=keyboard)
+    await SearchUserState.InputUsername.set()
+
+# Обработчик текстового сообщения с логином пользователя
+@dp.message_handler(state=SearchUserState.InputUsername, content_types=types.ContentTypes.TEXT)
+async def handle_username_input(message: types.Message, state: FSMContext):
+    username = message.text
+    users = get_all_users()
+
+    found_users = [(user_id, user_name) for user_id, user_name in users if username.lower() in user_name.lower()]
+
+    if found_users:
+        keyboard = types.InlineKeyboardMarkup(row_width=1)
+        for user_id, user_name in found_users:
+            keyboard.add(types.InlineKeyboardButton(text=user_name, callback_data=f'select_user_{user_id}_{user_name}'))
+        
+        await message.reply("Найдены пользователи:", reply_markup=keyboard)
+    else:
+        keyboard = types.InlineKeyboardMarkup()
+        keyboard.add(types.InlineKeyboardButton(text='Назад в меню',callback_data='search_user'))
+        await message.reply("Пользователи с таким логином не найдены.",reply_markup=keyboard)
+
+    await state.finish()  # Завершаем состояние после обработки запроса поиска
+
+
 # Обработчик нажатия на кнопку "Дальше" или "Назад"
 @dp.callback_query_handler(lambda call: call.data in ['next', 'back'], state="*")
 async def handle_pagination(callback_query: types.CallbackQuery, state: FSMContext):
     await bot.answer_callback_query(callback_query.id)
 
-  
+    users = get_all_users()
+    global users_per_page # Установка количества пользователей на странице
+    current_page = await state.get_state() or 0
 
-    current_page = int(await state.get('current_page', 0))
+    current_page = int(current_page)  # Преобразуем текущую страницу в целое число
 
     if callback_query.data == 'next':
         current_page += 1
     elif callback_query.data == 'back':
         current_page -= 1
 
+    await state.set_state(current_page)
+
     await send_users_page(callback_query.message.chat.id, callback_query.message.message_id, current_page)
-    await state.set('current_page', current_page)
+
+
+
+async def send_users_page(chat_id, message_id, page):
+    global users_per_page
+    start_index = page * users_per_page
+    end_index = min((page + 1) * users_per_page, len(users))
+    user_names = users[start_index:end_index]
+
+    keyboard = types.InlineKeyboardMarkup(row_width=1)
+    for i in range(0, len(user_names)):
+        user_id, user_name = user_names[i]  # Распаковываем tuple
+        user_name = str(user_name)  # Преобразуем в строку, если необходимо
+        keyboard.add(types.InlineKeyboardButton(text=user_name, callback_data=f'select_user_{user_id}_{user_name}'))
+
+    if page > 0:
+        keyboard.row(types.InlineKeyboardButton(text="Назад ⏪", callback_data='back'))
+    if end_index < len(users):
+        keyboard.row(types.InlineKeyboardButton(text="Дальше ⏩", callback_data='next'))
+
+    keyboard.row(
+        types.InlineKeyboardButton(text="Поиск по логину 🔍", callback_data='search_by_username'),
+        types.InlineKeyboardButton(text='Назад в меню', callback_data='analytics')
+    )
+
+    await bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="Выберите пользователя:", reply_markup=keyboard)
+
+
+
 
 # Обработчик нажатия на кнопку выбора пользователя
 @dp.callback_query_handler(lambda call: call.data.startswith('select_user_'), state="*")
@@ -389,31 +450,7 @@ async def update_month(message: types.Message, state: FSMContext):
     await state.finish()
 
 
-# Функция для отправки пользователей по страницам
-async def send_users_page(chat_id, message_id, page):
-    start_index = page * 6
-    end_index = min((page + 1) * 6, len(users))
-    user_names = users[start_index:end_index]
 
-    keyboard = types.InlineKeyboardMarkup(row_width=1)
-    for i in range(0, len(user_names), 3):
-        keyboard.add(*[types.InlineKeyboardButton(text=user_name, callback_data=f'select_user_{user_name}') for user_name in user_names[i:i+3]])
-
-    if end_index < len(users):
-        keyboard.row(
-            types.InlineKeyboardButton(text="Дальше ⏩", callback_data='next'),
-            types.InlineKeyboardButton(text="Назад ⏪", callback_data='back')
-        )
-    else:
-        keyboard.row(
-            types.InlineKeyboardButton(text="Назад ⏪", callback_data='back')
-        )
-
-    keyboard.row(
-        types.InlineKeyboardButton(text="Поиск по логину 🔍", callback_data='search_by_username')
-    )
-    keyboard.add(types.InlineKeyboardButton(text='Главное меню',callback_data='search_user'))
-    await bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="Выберите пользователя:", reply_markup=keyboard)
 
 
 @dp.callback_query_handler(lambda call: call.data == "newsletter", state="*")

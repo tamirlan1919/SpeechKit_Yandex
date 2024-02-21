@@ -13,3 +13,5 @@ class UpdateSymbols(StatesGroup):
 class UpdateMonth(StatesGroup):
     month = State()
 
+class SearchUserState(StatesGroup):
+    InputUsername = State()
