@@ -57,3 +57,24 @@ async def save_settings(settings: UserSettings):
 
 
 
+# Обработчик для получения настроек всех пользователей
+@app.get("/get_settings")
+async def get_all_settings():
+    conn = sqlite3.connect('user_settings.db')
+    cursor = conn.cursor()
+
+    # Получаем настройки всех пользователей
+    cursor.execute("SELECT user_id, selected_voice, selected_speed, format FROM user_settings")
+    all_settings = cursor.fetchall()
+
+    conn.close()
+
+    if all_settings:
+        return [{"user_id": row[0], "selected_voice": row[1], "selected_speed": row[2], "format": row[3]} for row in all_settings]
+    else:
+        return {"message": "Настройки не найдены"}
+
+
+@app.get('/')
+async def start():
+    return {'Done'}

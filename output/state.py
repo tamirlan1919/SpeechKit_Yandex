@@ -15,3 +15,10 @@ class UpdateMonth(StatesGroup):
 
 class SearchUserState(StatesGroup):
     InputUsername = State()
+
+class BonusDayState(StatesGroup):
+    bonus = State()
+
+
+class BonusRefState(StatesGroup):
+    ref = State()
