@@ -1,30 +1,16 @@
-import io
 import aiohttp
-import grpc
-import pydub
-import argparse
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
 from aiogram.types import ParseMode
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 import asyncio
-from aiogram.types import Chat
 from config import *
-import yandex.cloud.ai.tts.v3.tts_pb2 as tts_pb2
-import yandex.cloud.ai.tts.v3.tts_service_pb2_grpc as tts_service_pb2_grpc
-from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.types.web_app_info import WebAppInfo
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-import tempfile
 from base import *
-from aiogram.utils.exceptions import ChatNotFound
-import datetime
 from state import *
 from apscheduler.schedulers.background import BackgroundScheduler
-from aiohttp import web
-from aiogram.dispatcher.webhook import configure_app
+
 
 
 
@@ -91,66 +77,12 @@ def generate_voice_keyboard():
         keyboard.row(*row)
     return keyboard
 
-async def handle_notification(request):
-    data = await request.json()
-    print(data)
-    user_id = data.get("user_id")
-    selected_voice = data.get("selected_voice")
-    selected_speed = data.get("selected_speed")
-    role = data.get("role")
 
-    await send_notification(user_id, selected_voice, selected_speed, role)
-    return web.Response(text="Notification sent")
 
-async def send_notification(user_id: int, selected_voice: str, selected_speed: float, role: str):
-    selected_voice = voice_descriptions[selected_voice]
-    if role == 'undefined':
-        role = 'Нейтральный'
-    else:
-        role = roleLabels[role]
-    message = (
-        f"Ваши настройки сохранены:\n"
-        f"Спикер: {selected_voice}\n"
-        f"Скорость: {selected_speed}\n"
-        f"Роль: {role}"
-    )
-    await bot.send_message(user_id, message, parse_mode=ParseMode.HTML)
 
 @dp.message_handler(commands=['start'], state="*")
 async def handle_start(message: types.Message):
-    if message.chat.type == "private":
-        referal_id = None
-        if len(message.text.split()) > 1:
-            res = message.text.split()
-            res = res[-1]
-            res = res.replace('ref','')
-            referal_id = res
-
-        keyboard = types.InlineKeyboardMarkup()
-        keyboard.add(types.InlineKeyboardButton(text='Прагласительная ссылка 🫂', callback_data='ref_link'))
-        # Текст приветственного сообщения с эмодзи
-        welcome_text = "Привет! Я бот, который может преобразовывать текст в речь🎤. \
-Используйте «+» перед ударной гласной: хл+опок, хлоп+ок. \
-Используйте «-» чтобы отметить паузу между словами"
-        # Отправляем текст и преобразуем его в речь
-        if referal_id:
-            save_referral_invited(referal_id, message.from_user.id)
-            if message.from_user.username == None:
-                add_user(message.from_user.id, message.from_user.first_name ,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),2500,10,'OFF','join','user')
-            else:
-                add_user(message.from_user.id, message.from_user.username ,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),2500,10,'OFF','join','user')
-            await bot.send_message(message.chat.id, welcome_text,reply_markup=keyboard)
-        else:
-            
-            save_referral(message.from_user.id)
-
-            if message.from_user.username == None:
-                add_user(message.from_user.id, message.from_user.first_name ,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),2500,10,'OFF','join','user')
-            else:
-                add_user(message.from_user.id, message.from_user.username ,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),2500,10,'OFF','join','user')
-            await bot.send_message(message.chat.id, welcome_text,reply_markup=keyboard)
-    else:
-        await bot.send_message(message.chat.id,'бот работает в личных сообщениях')
+    await bot.send_message(message.chat.id, 'Мы переехали на @Yavoice_bot')
 # Обработчик нажатия на кнопку "Поиск по логину"
 @dp.callback_query_handler(lambda call: call.data == "ref_link", state="*")
 async def handle_ref_link(callback_query: types.CallbackQuery, state: FSMContext):
@@ -725,99 +657,15 @@ async def toggle_bot(callback_query: types.CallbackQuery):
 
 @dp.message_handler(commands=['help'])
 async def handle_setVoice(message: types.Message, state="*"):
-    text = 'Используйте «+» перед ударной гласной: хл+опок, хлоп+ок. \
-Используйте «-» чтобы отметить паузу между словами.'
-    await bot.send_message(message.chat.id , text=text)
+    await bot.send_message(message.chat.id, 'Мы переехали на @Yavoice_bot')
 
 
 @dp.message_handler(commands=['set_voice'], state="*")
 async def handle_setVoice(message: types.Message):
-    user_id = message.from_user.id
-    status = get_status_user(user_id)
-    if status[0]=='join':
-        keyboard = types.ReplyKeyboardMarkup(row_width=1,resize_keyboard=True) #создаем клавиатуру
-        webAppTest = types.WebAppInfo(url=f"https://ui-telegrab-bot.vercel.app/?user_id={user_id}")
-        one_butt = types.KeyboardButton(text="Перейти", web_app=webAppTest) #создаем кнопку типа webapp
-        keyboard.add(one_butt) #добавляем кнопки в клавиатуру
-        await bot.send_message(message.chat.id, 'Вы должны выбрать голос', reply_markup=keyboard)
-    else:
-        await bot.send_message(message.chat.id, 'Отказано в доступе')     
-
-@dp.message_handler(commands=['developer'], state="*")
-async def handle_developer(message: types.Message):
-    # Текст с ссылкой на разработчика
-    developer_text = "Привет! Я создан и поддерживаюсь Тимерланом. Если у тебя есть вопросы или предложения, " \
-                     "ты можешь написать ему в телеграм: [Тимерлан](https://t.me/timaadev) 🤖"
     
-    # Отправляем текст и преобразуем его в речь
-    await bot.send_message(message.chat.id, developer_text, parse_mode=ParseMode.MARKDOWN)
+    await bot.send_message(message.chat.id, 'Мы переехали на @Yavoice_bot')
 
-def synthesize(api_key, text,voice,speed,role = 'undefined') -> pydub.AudioSegment: 
-    request = ''
-    if role == 'undefined' or role == None:
-        request = tts_pb2.UtteranceSynthesisRequest(
-            
-            text=text,
-            output_audio_spec=tts_pb2.AudioFormatOptions(
-                container_audio=tts_pb2.ContainerAudio(
-                    container_audio_type=tts_pb2.ContainerAudio.WAV
-                )
-            ),
-            unsafe_mode = True,
-            # Параметры синтеза
-        hints=[
-        tts_pb2.Hints(voice=voice),  # (Опционально) Задайте голос. Значение по умолчанию marina
-            # (Опционально) Укажите амплуа, только если голос их имеет
-        tts_pb2.Hints(speed=speed)          # (Опционально) Задайте скорость синтеза
-        
-    ],
 
-            loudness_normalization_type=tts_pb2.UtteranceSynthesisRequest.LUFS
-        )
-    else:
-        request = tts_pb2.UtteranceSynthesisRequest(
-            
-            text=text,
-            output_audio_spec=tts_pb2.AudioFormatOptions(
-                container_audio=tts_pb2.ContainerAudio(
-                    container_audio_type=tts_pb2.ContainerAudio.WAV
-                )
-            ),
-            unsafe_mode = True,
-            # Параметры синтеза
-        hints=[
-        tts_pb2.Hints(voice=voice),  # (Опционально) Задайте голос. Значение по умолчанию marina
-            # (Опционально) Укажите амплуа, только если голос их имеет
-        tts_pb2.Hints(speed=speed)  ,        # (Опционально) Задайте скорость синтеза
-        tts_pb2.Hints(role=role) 
-    ],
-
-            loudness_normalization_type=tts_pb2.UtteranceSynthesisRequest.LUFS
-        )
-
-    # Установите соединение с сервером.
-    cred = grpc.ssl_channel_credentials()
-    channel = grpc.secure_channel('tts.api.cloud.yandex.net:443', cred)
-    stub = tts_service_pb2_grpc.SynthesizerStub(channel)
-
-    # Отправьте данные для синтеза.
-    it = stub.UtteranceSynthesis(request, metadata=(
-
-    # Параметры для аутентификации с IAM-токеном
-    # Параметры для аутентификации с API-ключом от имени сервисного аккаунта
-      ('authorization', f'Api-Key {api_key}'),
-    ))
-
-    # Соберите аудиозапись по порциям.
-    try:
-        audio = io.BytesIO()
-        for response in it:
-            audio.write(response.audio_chunk.data)
-        audio.seek(0)
-        return pydub.AudioSegment.from_wav(audio)
-    except grpc._channel._Rendezvous as err:
-        print(f'Error code {err._state.code}, message: {err._state.details}')
-        raise err
 
 
 async def check_sub_channels(channels, user_id):
@@ -830,155 +678,7 @@ async def check_sub_channels(channels, user_id):
 
 @dp.message_handler(content_types=types.ContentTypes.TEXT, state="*")
 async def handle_text_message(message: types.Message, state: FSMContext):
-    keyboard = None  # Initialize keyboard with a default value
-    if state_bot:
-        api_key = 'AQVN0PDNTv-toHXrisZqthBl5r5PL90m_TG_shRN'  # Замените на свой API-ключ
-        text = message.text
-        user_id = message.from_user.id
-        user_settings = get_user_settings(user_id)  # Функция get_user_settings должна быть определена
-        count_symbols_user = get_symbols(user_id)
-        request_month = get_request_month(user_id)
-        bonus_user = get_bonus_user_ref(user_id)
-       
-        unlimited = get_unlimited_person(user_id)
-        insert_or_update_user(user_id)
-        join = get_status_user(user_id)
-        if join[0] == 'join':
-                if unlimited[0]=='ON':
-                    if user_settings:
-
-                        selected_voice = user_settings['selected_voice']
-                        selected_speed = user_settings['selected_speed']
-                        selected_format = user_settings['format']
-                        role = user_settings['role']
-                        # Используйте настройки пользователя для синтеза речи
-                        audio = synthesize(api_key, text=text, voice=selected_voice,speed=selected_speed,role=role)
-
-                        # Преобразование формата аудио, если выбран MP3
-                        if selected_format == 'mp3':
-                            with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
-                                audio.export(temp_file.name, format='mp3')
-                                audio_data = open(temp_file.name, 'rb')
-                        else:
-                            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-                                audio.export(temp_file.name, format='wav')
-                                audio_data = open(temp_file.name, 'rb')
-
-                        # Отправка аудиофайла
-                        await bot.send_audio(message.chat.id, audio_data, caption=text[0:5] + '....', parse_mode=ParseMode.MARKDOWN)
-                
-
-                    else:
-                        if user_settings == None:
-                            keyboard = types.ReplyKeyboardMarkup(row_width=1,resize_keyboard=True) #создаем клавиатуру
-                            webAppTest = types.WebAppInfo(url=f"https://ui-telegrab-bot.vercel.app/?user_id={user_id}")
-                            one_butt = types.KeyboardButton(text="Перейти", web_app=webAppTest) #создаем кнопку типа webapp
-                            keyboard.add(one_butt) #добавляем кнопки в клавиатуру
-
-
-                            # keyboard = types.ReplyKeyboardMarkup()
-                            # keyboard.add("Перейти", web_app=WebAppInfo(url = 'https://ui-telegrab-bot.vercel.app/'))
-                            await bot.send_message(message.chat.id, 'Вы должны выбрать голос', reply_markup=keyboard)
-
-                elif request_month[0]>0:
-
-                    if user_settings:
-                        try:
-                            selected_voice = user_settings['selected_voice']
-                            selected_speed = user_settings['selected_speed']
-                            selected_format = user_settings['format']
-                            role = user_settings['role']
-
-                            # Используйте настройки пользователя для синтеза речи
-                            audio = synthesize(api_key, text=text, voice=selected_voice,speed=selected_speed,role=role)
-
-                            # Преобразование формата аудио, если выбран MP3
-                            if selected_format == 'mp3':
-                                with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
-                                    audio.export(temp_file.name, format='mp3')
-                                    audio_data = open(temp_file.name, 'rb')
-                            else:
-                                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-                                    audio.export(temp_file.name, format='wav')
-                                    audio_data = open(temp_file.name, 'rb')
-
-                            # Отправка аудиофайла
-                            await bot.send_audio(message.chat.id, audio_data, caption=text[0:5] + '....', parse_mode=ParseMode.MARKDOWN)
-                            minus_one(user_id) #Обновляем значение в таблице
-                        except:
-                            pass
-
-                    else:
-                        if user_settings == None:
-                            keyboard = types.ReplyKeyboardMarkup(row_width=1,resize_keyboard=True) #создаем клавиатуру
-                            webAppTest = types.WebAppInfo(url=f"https://ui-telegrab-bot.vercel.app/?user_id={user_id}")
-                            one_butt = types.KeyboardButton(text="Перейти", web_app=webAppTest) #создаем кнопку типа webapp
-                            keyboard.add(one_butt) #добавляем кнопки в клавиатуру
-
-
-                            # keyboard = types.ReplyKeyboardMarkup()
-                            # keyboard.add("Перейти", web_app=WebAppInfo(url = 'https://ui-telegrab-bot.vercel.app/'))
-                            await bot.send_message(message.chat.id, 'Вы должны выбрать голос', reply_markup=keyboard) 
-                elif bonus_user[0] != None:
-                    if bonus_user[0] > 0:
-                        if user_settings:
-                            try:
-                                selected_voice = user_settings['selected_voice']
-                                selected_speed = user_settings['selected_speed']
-                                selected_format = user_settings['format']
-                                role = user_settings['role']
-
-                                # Используйте настройки пользователя для синтеза речи
-                                audio = synthesize(api_key, text=text, voice=selected_voice,speed=selected_speed,role=role)
-
-                                # Преобразование формата аудио, если выбран MP3
-                                if selected_format == 'mp3':
-                                    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
-                                        audio.export(temp_file.name, format='mp3')
-                                        audio_data = open(temp_file.name, 'rb')
-                                else:
-                                    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-                                        audio.export(temp_file.name, format='wav')
-                                        audio_data = open(temp_file.name, 'rb')
-
-                                # Отправка аудиофайла
-                                await bot.send_message(message.chat.id,text='У вас закончились запросы за день и воспользуемся вашими бонусными запросами)')
-                                await bot.send_audio(message.chat.id, audio_data, caption=text[0:5] + '....', parse_mode=ParseMode.MARKDOWN)
-                                minus_one_bonus(user_id) #Обновляем значение в таблице
-                            except:
-                                pass
-
-                        else:
-                            if user_settings == None:
-                                keyboard = types.ReplyKeyboardMarkup(row_width=1,resize_keyboard=True) #создаем клавиатуру
-                                webAppTest = types.WebAppInfo(url=f"https://ui-telegrab-bot.vercel.app/?user_id={user_id}")
-                                one_butt = types.KeyboardButton(text="Перейти", web_app=webAppTest) #создаем кнопку типа webapp
-                                keyboard.add(one_butt) #добавляем кнопки в клавиатуру
-
-
-                                # keyboard = types.ReplyKeyboardMarkup()
-                                # keyboard.add("Перейти", web_app=WebAppInfo(url = 'https://ui-telegrab-bot.vercel.app/'))
-                                await bot.send_message(message.chat.id, 'Вы должны выбрать голос', reply_markup=keyboard)
-
-                else:
-                    invited_users = get_invited_users(user_id=message.chat.id )
-                    get_req = get_request_mon_for_user(user_id=message.chat.id )
-                    print(type(get_req),get_req)
-                    if get_req == None:
-                        get_req = 0
-                    else:
-                        get_req = get_request_mon_for_user(user_id=message.chat.id )
-
-
-                    count = get_bonus_ref()
-                    await bot.send_message(chat_id=message.chat.id,text= 'Увы, но на сегодня  у вас закончились запросы(\n\n'+REF_TEXT.format(count = count,users=invited_users,count2=get_req,url = f'https://t.me/@nmntzhvoice_bot?start=ref{message.chat.id}'))
-                    
-                 
-
-        else:
-          await bot.send_message(message.chat.id, text='Отказано в доступе',parse_mode='HTML')  
-    else:
-        await bot.send_message(message.chat.id, text=SORRY,reply_markup=keyboard,parse_mode='HTML')
+    await bot.send_message(message.chat.id, 'Мы переехали на @Yavoice_bot')
 
 
 async def send_message(session, token, user_id, adm_id):
@@ -1015,72 +715,9 @@ async def update_request_statuses():
 
 
 
-async def generate_format_keyboard():
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.row(InlineKeyboardButton(text="WAV 🎵", callback_data="format_wav"),
-                 InlineKeyboardButton(text="MP3 💿", callback_data="format_mp3"))
-    return keyboard
 
 
-@dp.callback_query_handler(lambda c: c.data.startswith('voice_'), state=VoiceSelection.Choosing)
-async def process_voice_choice(callback_query: types.CallbackQuery, state: FSMContext):
-    selected_voice = callback_query.data.split('_')[1]
-    await VoiceSelection.FormatChoosing.set()
-
-    # Save selected voice to state
-    await state.update_data(selected_voice=selected_voice)
-
-    # Send keyboard for format selection directly
-    keyboard = await generate_format_keyboard()
-    await bot.edit_message_text("Выберите формат аудио:", callback_query.message.chat.id,
-                                callback_query.message.message_id, reply_markup=keyboard)
-
-
-
-
-
-@dp.callback_query_handler(lambda c: c.data.startswith('format_'), state=VoiceSelection.FormatChoosing)
-async def process_format_choice(callback_query: types.CallbackQuery, state: FSMContext):
-    selected_format = callback_query.data.split('_')[1]
-    data = await state.get_data()
-    selected_voice = data.get('selected_voice')
-    selected_speed = data.get('selected_speed')
-
-    # Use selected voice, speed, and format for speech synthesis
-    api_key = 'AQVN0fiGepILDWchpaGpBf81jITFo_SQY6AruXBb'  # Replace with your API key
-    text = data.get('text', '')
-    audio = synthesize(api_key, text[0:249], voice=selected_voice)
-
-    # Convert audio format if MP3 is selected
-    if selected_format == 'mp3':
-        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
-            audio.export(temp_file.name, format='mp3')
-            audio_data = open(temp_file.name, 'rb')
-    else:
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-            audio.export(temp_file.name, format='wav')
-            audio_data = open(temp_file.name, 'rb')
-
-    # Send the audio file
-    await bot.send_audio(callback_query.from_user.id, audio_data, caption=text[0:259] + '....',
-                        parse_mode=ParseMode.MARKDOWN)
-
-    # Finish the state
-    await state.finish()
-
-    # Answer the callback query
-    await bot.answer_callback_query(callback_query.id, text=f"Голос: {selected_voice}, Скорость: {selected_speed}, Формат: {selected_format}")
-
-    
 scheduler.add_job(add_daily_requests, trigger='cron', day='*', hour='0') # Запускать каждый день в полночь
-# Запуск aiohttp сервера
-async def on_startup(dp):
-    app = web.Application()
-    app.router.add_post('/send_notification', handle_notification)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', 3000)
-    await site.start()
 
 #update_request_statuses()
 if __name__ == '__main__':
@@ -1089,5 +726,5 @@ if __name__ == '__main__':
 
     loop.create_task(bot.send_message(5455171373, 'Бот запущен'))  # Замените 123456789 на ваш ID чата
     
-    loop.create_task(on_startup(dp))
+    
     executor.start_polling(dp, skip_updates=True)

@@ -23,14 +23,15 @@ def create_db():
 def get_user_settings(user_id):
     conn = sqlite3.connect('user_settings.db')
     cursor = conn.cursor()
-    cursor.execute('''SELECT selected_voice, selected_speed, format FROM user_settings WHERE user_id = ?''', (user_id,))
+    cursor.execute('''SELECT selected_voice, selected_speed, format, role FROM user_settings WHERE user_id = ?''', (user_id,))
     settings = cursor.fetchone()
     conn.close()
     if settings:
         return {
             'selected_voice': settings[0],
             'selected_speed': settings[1],
-            'format': settings[2]
+            'format': settings[2],
+            'role': settings[3]
         }
     else:
         return None
@@ -97,6 +98,7 @@ def activity_today():
 
 
 
+
 def save_referral_invited(referral_id, user_id):
 
     user = get_user_ref_table(user_id)
@@ -107,8 +109,9 @@ def save_referral_invited(referral_id, user_id):
     cursor = conn.cursor()
     bonus_ref = get_bonus_ref()
     cursor.execute("INSERT INTO ref_table (user_id, invited_user_id) VALUES (?, ?)", (user_id, referral_id))
+    cursor.execute("UPDATE ref_table SET count_request_month = IFNULL(count_request_month, 0) + ? WHERE user_id = ?", (bonus_ref,referral_id))
     conn.commit()
-    update_bonus(referral_id, bonus_ref)
+    update_bonus(referral_id)
 
     conn.close()
 
@@ -301,17 +304,14 @@ def add_daily_requests():
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
 
-    # Проверяем, существует ли запись для пользователя
-    cursor.execute("SELECT * FROM my_users WHERE user_id = ?", (user_id,))
-    existing_user = cursor.fetchone()
 
-    if existing_user:
-        # Если запись существует, выполняем операцию обновления (UPDATE)
-        cursor.execute("UPDATE my_users SET request_month = ? WHERE user_id = ?", (25, user_id))
+    cursor.execute("SELECT count FROM bonus_day")
+    count = cursor.fetchall()
+
+    if count:
+        cursor.execute("UPDATE my_users SET request_month = ?", (count[0],))
     else:
-        # Если запись не существует, выполняем операцию вставки (INSERT)
-        cursor.execute("INSERT INTO my_users (user_id, request_month) VALUES (?, ?)", (user_id, 25))
-
+        cursor.execute("UPDATE my_users SET request_month = ?", (25,))
     conn.commit()
     conn.close()
 
@@ -439,6 +439,16 @@ def get_request_month(user_id):
     return existing_user
 
 
+def get_bonus_user_ref(user_id):
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT count_request_month FROM ref_table WHERE user_id = ?", (user_id,))
+    existing_user = cursor.fetchone()
+    conn.close()
+    return existing_user
+
+
+
 def get_unlimited_person(user_id):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
@@ -535,6 +545,15 @@ def minus_one(user_id):
     conn.close()
 
 
+def minus_one_bonus(user_id):
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute("UPDATE ref_table SET count_request_month = count_request_month - 1 WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+
+
 def count_blocked_users():
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
@@ -545,3 +564,6 @@ def count_blocked_users():
 
     conn.close()
     return blocked_count
+
+
+# Подключаемся к базе данных SQLite
