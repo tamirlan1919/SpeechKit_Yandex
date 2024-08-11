@@ -383,6 +383,14 @@ def update_bonus(count):
     conn.close()
 
 
+def update_count_symbol(count):
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute("UPDATE my_users SET count_symbol = ?", (count,))
+    conn.commit()
+    conn.close()
+
+
 #Обновление реф бонуса
     
 

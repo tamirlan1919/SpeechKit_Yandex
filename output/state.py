@@ -20,5 +20,8 @@ class BonusDayState(StatesGroup):
     bonus = State()
 
 
+class CountSymbolsState(StatesGroup):
+    count = State()
+
 class BonusRefState(StatesGroup):
     ref = State()

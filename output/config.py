@@ -1,4 +1,4 @@
-TOKEN = '7482330072:AAFNkFF6qbpHxAgWUq3YFhCyRLHHO5wZ64A'
+TOKEN = '6713198892:AAH27YMa4nFjcSahzyPdUctXYss792sh8LU'
 
 CNANNELS = [
     ['КАНАЛ 1','@nmntzh','https://t.me/nmntzh'],

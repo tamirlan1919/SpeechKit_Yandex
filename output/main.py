@@ -165,7 +165,7 @@ async def handle_ref_link(callback_query: types.CallbackQuery, state: FSMContext
 
 
     count = get_bonus_ref()
-    await bot.send_message(chat_id=callback_query.message.chat.id,text=REF_TEXT.format(count = count,users=invited_users,count2=get_req,url = f'https://t.me/@nmntzhvoice_bot?start=ref{callback_query.message.chat.id}'))
+    await bot.send_message(chat_id=callback_query.message.chat.id,text=REF_TEXT.format(count = count,users=invited_users,count2=get_req,url = f'https://t.me/@Yavoice_bot?start=ref{callback_query.message.chat.id}'))
     
 
 # Обработчик текстового сообщения с логином пользователя
@@ -218,6 +218,7 @@ async def handle_bot_analitycs(callback_query: types.CallbackQuery):
     keyboard = types.InlineKeyboardMarkup(row_width=1, resize_keyboard=True)
     keyboard.add(types.InlineKeyboardButton(text="Найти пользователя 🔎",callback_data='search_user'))
     keyboard.add(types.InlineKeyboardButton(text='Ежедневный бонус ',callback_data='bonus_day'))
+    keyboard.add(types.InlineKeyboardButton(text='Кол-во символов',callback_data='count_symbols'))
     keyboard.add(types.InlineKeyboardButton(text='Реф бонус',callback_data='ref_bonus'))
     keyboard.add(types.InlineKeyboardButton(text="Назад ⏪",callback_data='back_menu'))
     text = 'Статистика 📊'
@@ -257,6 +258,30 @@ async def bon_state_ref(message: types.Message, state: FSMContext):
         keyboard = types.InlineKeyboardMarkup()
         keyboard.add(types.InlineKeyboardButton(text='Назад', callback_data='analytics'))
         await message.reply(f'Количество бонусов за реф приглашение успешно обновлено: {new_bonus_count}', reply_markup=keyboard)
+        await state.finish()  # завершаем состояние FSM после обработки сообщения
+    except ValueError:
+        await message.reply("Пожалуйста, введите число.")
+
+
+
+
+@dp.callback_query_handler(lambda call: call.data == "count_symbols", state="*")
+async def handle_count_symbols(callback_query: types.CallbackQuery, state: FSMContext):
+    await bot.answer_callback_query(callback_query.id) 
+    await bot.send_message(callback_query.message.chat.id, 'Введите новое кол-во символов за запрос')
+    await CountSymbolsState.count.set()
+
+@dp.message_handler(state=CountSymbolsState.count)
+async def count_symbols_state(message: types.Message, state: FSMContext):
+    try:
+        new_count = int(message.text)
+        if new_count < 0:
+            await message.reply("Количество символов не может быть отрицательным.")
+            return
+        update_count_symbol(new_count)
+        keyboard = types.InlineKeyboardMarkup()
+        keyboard.add(types.InlineKeyboardButton(text='Назад', callback_data='analytics'))
+        await message.reply(f'Количество символов за запрос успешно обновлено: {new_count}', reply_markup=keyboard)
         await state.finish()  # завершаем состояние FSM после обработки сообщения
     except ValueError:
         await message.reply("Пожалуйста, введите число.")
@@ -971,7 +996,7 @@ async def handle_text_message(message: types.Message, state: FSMContext):
 
 
                     count = get_bonus_ref()
-                    await bot.send_message(chat_id=message.chat.id,text= 'Увы, но на сегодня  у вас закончились запросы(\n\n'+REF_TEXT.format(count = count,users=invited_users,count2=get_req,url = f'https://t.me/@nmntzhvoice_bot?start=ref{message.chat.id}'))
+                    await bot.send_message(chat_id=message.chat.id,text= 'Увы, но на сегодня  у вас закончились запросы(\n\n'+REF_TEXT.format(count = count,users=invited_users,count2=get_req,url = f'https://t.me/@Yavoice_bot?start=ref{message.chat.id}'))
                     
                  
 
