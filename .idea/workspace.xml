@@ -5,23 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d21d3add-a94e-4de2-aafa-0034ad812182" name="Changes" comment="add count symbols button">
-      <change afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/alembic/env.py" beforeDir="false" afterPath="$PROJECT_DIR$/output/alembic/env.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/backend/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/output/backend/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/backend/crud.py" beforeDir="false" afterPath="$PROJECT_DIR$/output/backend/crud.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/backend/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/output/backend/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/bot/.env" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/bot/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/output/bot/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/bot/database/db.py" beforeDir="false" afterPath="$PROJECT_DIR$/output/bot/database/db.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/bot/database/repository.py" beforeDir="false" afterPath="$PROJECT_DIR$/output/bot/database/repository.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/bot/handlers/generals.py" beforeDir="false" afterPath="$PROJECT_DIR$/output/bot/handlers/generals.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/bot/handlers/payment.py" beforeDir="false" afterPath="$PROJECT_DIR$/output/bot/handlers/payment.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/bot/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/output/bot/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/bot/texts.py" beforeDir="false" afterPath="$PROJECT_DIR$/output/bot/texts.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/path/to/venv/lib/python3.12/site-packages/pip/_internal/commands/freeze.py" beforeDir="false" afterPath="$PROJECT_DIR$/output/path/to/venv/lib/python3.12/site-packages/pip/_internal/commands/freeze.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/path/to/venv/lib/python3.12/site-packages/pip/_internal/commands/list.py" beforeDir="false" afterPath="$PROJECT_DIR$/output/path/to/venv/lib/python3.12/site-packages/pip/_internal/commands/list.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/requirements.txt" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
