@@ -1,9 +1,11 @@
-TOKEN = '6261824102:AAHWd67fP3YoJJIqJ6_vDDgWE-Hr3dSI9Fw'
+from dotenv import load_dotenv
+import os
 
-CNANNELS = [
-    ['КАНАЛ 1','@nmntzh','https://t.me/nmntzh'],
-    ['КАНАЛ 2','@ndsgne','https://t.me/ndsgne']
-]
+load_dotenv()
+
+TOKEN = os.getenv('TOKEN')
+PAYMENTS_PROVIDER_TOKEN = os.getenv('PAYMENTS_PROVIDER_TOKEN')
+YANDEX_SPEECH_KEY = os.getenv('YANDEX_SPEECH_KEY')
 
 admin_ids = [
     5455171373,
@@ -11,34 +13,39 @@ admin_ids = [
 
 ]
 
-NOT_SUB_MESSAGE = 'Для доступа к боту, необходимо подписаться на следующие каналы'
-SORRY = 'Извините, но на данный момент бот выключен по техническим моментам'
+roleLabels = {
+    "neutral": 'Нейтральный',
+    "good": 'Радостный',
+    "strict": 'Строгий',
+    "evil": 'Злой',
+    "friendly": 'Дружелюбный',
+    "whisper": 'Шепот'
+};
+voice_descriptions = {
+    'alena': 'Алёна 💅',
+    'filipp': 'Филипп 👤',
+    'ermil': 'Ермил 👤',
+    'jane': 'Джейн 💅',
+    'madirus': 'Мадирас 👤',
+    'omazh': 'Омаж 👤',
+    'zahar': 'Захар 👤',
+    'dasha': 'Даша 💅',
+    'julia': 'Юлия 💅',
+    'lera': 'Лера 💅',
+    'masha': 'Маша 💅',
+    'marina': 'Марина 💅',
+    'alexander': 'Александр 👤',
+    'kirill': 'Кирилл 👤',
+    'anton': 'Антон 👤',
+    'madi': 'Madï👤',
+    'amira': 'Amïra 💅',
+    'nigora': 'Nigora 💅',
+    'john': 'John 👤',
+    'lea': 'Lea 💅'
+}
 
-REF_TEXT = '''🔹 Реферальная программа
-
-Получайте {count} запросов за приглашенного пользователя.
-
-👥 Приглашено пользователей: {users}
-🔶 У вас : {count2} запросов
+state_bot = True
+users_per_page = 3  # Установка количества пользователей на странице
 
 
 
-🔗 Моя реферальная ссылка:\n{url}
-'''
-
-REF_ADMIN = '''🔹 Настройки реферальной программы
-
-Сервис: {service}
-Бонус за приглашенного: {count}
-'''
-
-
-howMuchOstatok = '''🎧 Ваш текст озвучен!
-
-У вас осталось: {} запросов на сегодня.
-
-🔹 Если запросы закончатся, вы можете:
-- Пригласите друзей и получите бонусы: /refs
-- Пополните баланс символов: /buy
-
-⚙️ Изменить голос: /set_voice'''

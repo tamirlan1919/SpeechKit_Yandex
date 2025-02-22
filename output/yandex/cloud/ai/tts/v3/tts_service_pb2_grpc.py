@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from yandex.cloud.ai.tts.v3 import tts_pb2 as yandex_dot_cloud_dot_ai_dot_tts_dot_v3_dot_tts__pb2
+from output.yandex.cloud.ai.tts.v3 import tts_pb2 as yandex_dot_cloud_dot_ai_dot_tts_dot_v3_dot_tts__pb2
 
 
 class SynthesizerStub(object):
