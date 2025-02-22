@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from bot.database.db import get_db
+from output.bot.database.db import get_db
 from .schemas import UserSettingsCreate
 from .crud import create_or_update_user_settings, get_all_user_settings
 from .utils import notify_bot

@@ -12,7 +12,8 @@ from output.bot.database.repository import (get_status_user, get_request_monthAL
                                             create_invitation_record, get_symbols_from_subscriptions, get_request_month,
                                             get_bonus_user_ref)
 from aiogram.enums.parse_mode import ParseMode
-from output.bot.texts import REF_TEXT, welcome_text, balance_symbols, ref_program, balance_symbols_commercial
+from output.bot.texts import REF_TEXT, welcome_text, balance_symbols, ref_program, balance_symbols_commercial, \
+    payment_text
 from output.bot.keyboards.keyboard_user import startKeyboard, get_web_keyboard, get_account_keyboard, get_pay_keyboard, \
     get_pay_keyboard_with_back, get_account_keyboard_with_back
 from output.bot.texts import help_text
@@ -157,12 +158,7 @@ async def handle_ref_link(callback_query: CallbackQuery):
 async def deposit_balance_handler(callback_query: CallbackQuery):
     await callback_query.answer()
     await callback_query.message.edit_text(
-        "💳 **Пополнение баланса символов**\n\n"
-        "Выберите подходящий тариф:\n"
-        "- **20 000 символов** — 150 рублей (~15 минут озвучки)\n"
-        "- **100 000 символов** — 600 рублей (~75 минут озвучки)\n"
-        "- **300 000 символов** — 1 500 рублей (~225 минут озвучки)\n\n"
-        "🔹 Нажмите на соответствующую кнопку ниже, чтобы выбрать тариф и оплатить.",
+        payment_text,
         reply_markup=get_pay_keyboard_with_back(), parse_mode=ParseMode.HTML
     )
 
@@ -170,12 +166,7 @@ async def deposit_balance_handler(callback_query: CallbackQuery):
 async def deposit_balance_from_text(callback_query: CallbackQuery):
     await callback_query.answer()
     await callback_query.message.answer(
-        "💳 **Пополнение баланса символов**\n\n"
-        "Выберите подходящий тариф:\n"
-        "- **20 000 символов** — 150 рублей (~15 минут озвучки)\n"
-        "- **100 000 символов** — 600 рублей (~75 минут озвучки)\n"
-        "- **300 000 символов** — 1 500 рублей (~225 минут озвучки)\n\n"
-        "🔹 Нажмите на соответствующую кнопку ниже, чтобы выбрать тариф и оплатить.",
+        payment_text,
         reply_markup=get_pay_keyboard_with_back(), parse_mode=ParseMode.HTML
     )
 
@@ -187,22 +178,12 @@ async def deposit_balance_handler(callback_query: CallbackQuery):
     await callback_query.answer()
     if callback_query.data == 'deposit_balance':
         await callback_query.message.edit_text(
-            "💳 **Пополнение баланса символов**\n\n"
-            "Выберите подходящий тариф:\n"
-            "- **20 000 символов** — 150 рублей (~15 минут озвучки)\n"
-            "- **100 000 символов** — 600 рублей (~75 минут озвучки)\n"
-            "- **300 000 символов** — 1 500 рублей (~225 минут озвучки)\n\n"
-            "🔹 Нажмите на соответствующую кнопку ниже, чтобы выбрать тариф и оплатить.",
+            payment_text,
             reply_markup=get_pay_keyboard_with_back(), parse_mode=ParseMode.HTML
         )
     else:
         await callback_query.message.edit_text(
-            "💳 **Пополнение баланса символов**\n\n"
-            "Выберите подходящий тариф:\n"
-            "- **20 000 символов** — 150 рублей (~15 минут озвучки)\n"
-            "- **100 000 символов** — 600 рублей (~75 минут озвучки)\n"
-            "- **300 000 символов** — 1 500 рублей (~225 минут озвучки)\n\n"
-            "🔹 Нажмите на соответствующую кнопку ниже, чтобы выбрать тариф и оплатить.",
+            payment_text,
             reply_markup=get_pay_keyboard(), parse_mode=ParseMode.HTML
         )
 

@@ -1,15 +1,26 @@
 import asyncio
 
+
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from config import TOKEN
 from handlers import router
-from database import create_all_tables
+from database.db import create_all_tables, AsyncSessionLocal
 from database.repository import add_daily_requests  # Ваша функция для обновления request_month и пр.
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiohttp import web
 from output.bot.handlers.noitification import handle_notification
+import sys
+import os
+from aiogram.client.bot import DefaultBotProperties
 
+from aiogram import types
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+
+async def scheduled_task():
+    async with AsyncSessionLocal() as db:
+        await add_daily_requests(db)
 
 
 # Функция для запуска aiohttp-сервера
@@ -27,7 +38,7 @@ async def on_startup(dispatcher: Dispatcher):
 
 
 async def main():
-    bot = Bot(TOKEN)
+    bot = Bot(TOKEN, default=DefaultBotProperties(parse_mode='html'))
     dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(router)
     # Создаем все таблицы в базе данных
@@ -40,7 +51,7 @@ async def main():
     # Настраиваем планировщик (AsyncIOScheduler)
     scheduler = AsyncIOScheduler()
     # Добавляем задачу, которая будет запускаться каждый день в 02:00
-    scheduler.add_job(add_daily_requests, trigger='cron', hour=2, minute=0)
+    scheduler.add_job(scheduled_task, trigger='cron', hour=2, minute=0)
     scheduler.start()
     print("Планировщик запущен")
 

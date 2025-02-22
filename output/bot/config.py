@@ -6,7 +6,7 @@ load_dotenv()
 TOKEN = os.getenv('TOKEN')
 PAYMENTS_PROVIDER_TOKEN = os.getenv('PAYMENTS_PROVIDER_TOKEN')
 YANDEX_SPEECH_KEY = os.getenv('YANDEX_SPEECH_KEY')
-
+DATABASE_URL = os.getenv('DATABASE_URL')
 admin_ids = [
     5455171373,
     387161594

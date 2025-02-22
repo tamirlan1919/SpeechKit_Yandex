@@ -1,10 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from output.bot.database import Base
-
-# Подключение к PostgreSQL через asyncpg
-DATABASE_URL = "postgresql+asyncpg://postgres:linux1818@localhost:5433/yavoice"
+from output.bot.config import DATABASE_URL
+from .models import Base
 
 # Создаём асинхронный движок
 engine = create_async_engine(DATABASE_URL)

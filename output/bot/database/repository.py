@@ -13,7 +13,6 @@ from .models import (
     Referral,
     ActivityToday, Transaction
 )
-redis_client = redis.Redis.from_url("redis://localhost:6379", decode_responses=True)
 
 
 # ==============================
@@ -251,7 +250,7 @@ async def update_bonus_ref(count: int, db: AsyncSession):
 async def get_bonus_ref(db: AsyncSession):
     """Получить запись из таблицы bonus_ref."""
     result = await db.execute(select(BonusRef.count))
-    return result.scalars().first()
+    return result.scalars().first() or 5
 
 
 # ==============================
@@ -268,15 +267,11 @@ async def update_user_symbols(user_id: int, new_symbols: int, db: AsyncSession):
 
 
 async def get_symbols(user_id: int, db: AsyncSession):
-    cached_balance = await redis_client.get(f'balance:{user_id}')
-    if cached_balance:
-        return int(cached_balance)
 
     result = await db.execute(
         select(User.count_symbol).where(User.user_id == int(user_id))
     )
     balance = result.scalar()
-    await redis_client.set(f'balance:{user_id}', balance, ex=3600)
     return balance
 
 
