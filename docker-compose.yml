@@ -1,4 +1,20 @@
+version: "3.8"
+
 services:
+  postgres:
+    image: postgres:16
+    container_name: postgres16
+    restart: always
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./dump.sql:/docker-entrypoint-initdb.d/dump.sql
+    ports:
+      - "5432:5432"
+
   backend:
     build:
       context: .
@@ -9,6 +25,8 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    depends_on:
+      - postgres
 
   bot:
     build:
@@ -18,3 +36,8 @@ services:
     restart: always
     env_file:
       - .env
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
