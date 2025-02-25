@@ -2,7 +2,7 @@ import httpx
 
 
 async def notify_bot(user_id, selected_voice, selected_speed, role):
-    bot_url = "http://localhost:3000/send_notification"
+    bot_url = "http://bot:3000/send_notification"
     payload = {
         "user_id": user_id,
         "selected_voice": selected_voice,

@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from output.bot.database.models import UserSettings
-from .schemas import UserSettingsCreate
+from schemas import UserSettingsCreate
 
 
 async def get_user_settings(db: AsyncSession, user_id: int):
