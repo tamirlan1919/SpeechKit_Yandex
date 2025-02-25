@@ -67,6 +67,7 @@ async def handle_text_message(message: Message, state: FSMContext):
                                        role=role)
                     audio_data = await convert_audio(audio, selected_format)
                     await update_subscriptions_symbols_by_id(message.from_user.id, len(message.text), db)
+                    subscriptions_symbol = await get_symbols_from_subscriptions(user_id, db)
                     await message.answer_audio(audio_data,
                                                caption=success_voiced.format(count=subscriptions_symbol))
 
