@@ -36,7 +36,7 @@ async def tarif_handler(callback_query: CallbackQuery):
             "title": "20 000 символов",
             "description": "Вы выбрали тариф 20 000 символов за 150 рублей.После оплаты символы будут добавлены автоматически.",
             "payload": "small_tariff",
-            "amount": 100_00  # 150 рублей в копейках
+            "amount": 150_00  # 150 рублей в копейках
         },
         "100k_symbols": {
             "title": "100 000 символов",
