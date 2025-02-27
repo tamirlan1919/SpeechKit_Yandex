@@ -438,7 +438,7 @@ async def process_mixed_content(message: types.Message, state: FSMContext):
                 if text and photo:
                     await message.bot.send_photo(user_id, photo, caption=text)
                 elif text:
-                    await message.bot.send_message(user_id, text, parse_mode="MarkdownV2",
+                    await message.bot.send_message(user_id, text, parse_mode="Markdown",
                                                    disable_web_page_preview=True)
                 elif photo:
                     await message.bot.send_photo(user_id, photo)
